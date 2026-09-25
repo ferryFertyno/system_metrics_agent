@@ -1,0 +1,38 @@
+services:
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: system-metrics-agent:latest
+    container_name: metrics-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    networks:
+      - metrics-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: system-metrics-agent:latest
+    container_name: metrics-agent
+    env_file:
+      - .env
+    networks:
+      - metrics-network
+    depends_on:
+      api:
+        condition: service_healthy
+
+networks:
+  metrics-network:
+    driver: bridge
